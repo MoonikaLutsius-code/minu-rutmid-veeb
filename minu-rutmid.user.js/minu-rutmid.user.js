@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Minu rütmid
 // @namespace    moonika.musicca
-// @version      4.2
+// @version      4.3
 // @description  27 rütminuppu ja helehall peatamisekraan
 // @match        https://www.musicca.com/drum-machine*
 // @grant        unsafeWindow
@@ -114,6 +114,20 @@
   const control = () => document.querySelector('#play');
   const ready = () => page.appHasLoaded && page.AUDIO && page.App && control();
 
+  // replaceState muudab URL-i, aga ei saada hashchange sündmust; saada sündmus ise
+  // ja rakenda valitud muster otse, et URL ning Musicca olek oleksid kooskõlas.
+  function applyURLState(hash) {
+    const oldURL = page.location.href;
+    history.replaceState(null, '', hash);
+    const newURL = page.location.href;
+    if (oldURL !== newURL) {
+      page.dispatchEvent(new page.HashChangeEvent('hashchange', { oldURL, newURL }));
+    }
+    const parsed = page.parseURLState();
+    if (!parsed?.state) throw new Error('Vigane rütmilink');
+    page.App.applyPattern(parsed.state);
+  }
+
   function releaseWakeLock() {
     if (!wakeLock) return;
     const oldLock = wakeLock;
@@ -150,9 +164,7 @@
     if (wasActive) {
       const match = location.hash.match(/^#data=(\d+)-([ny])(-.*)$/);
       if (match && match[2] === 'y') {
-        history.replaceState(null, '', '#data=' + match[1] + '-n' + match[3]);
-        const parsed = page.parseURLState();
-        if (parsed?.state) page.App.applyPattern(parsed.state);
+        applyURLState('#data=' + match[1] + '-n' + match[3]);
       }
     }
     stopButton.hidden = true;
@@ -179,10 +191,7 @@
     }
 
     try {
-      history.replaceState(null, '', '#data=' + track[1]);
-      const parsed = page.parseURLState();
-      if (!parsed?.state) throw new Error('Vigane rütmilink');
-      page.App.applyPattern(parsed.state);
+      applyURLState('#data=' + track[1]);
       active = true;
       root.querySelector('#title').textContent = track[0] + ' · puuduta peatamiseks';
       root.querySelector('#wake').textContent = 'Käivitan heli…';
