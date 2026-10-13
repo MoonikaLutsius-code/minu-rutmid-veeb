@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Minu rütmid
 // @namespace    moonika.musicca
-// @version      4.1
+// @version      4.8
 // @description  27 rütminuppu ja helehall peatamisekraan
 // @match        https://www.musicca.com/drum-machine*
 // @grant        unsafeWindow
