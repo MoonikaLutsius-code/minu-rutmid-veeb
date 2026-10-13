@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Minu rütmid
 // @namespace    moonika.musicca
-// @version      4.8
+// @version      2026.10.13
 // @description  27 püsivat rütminuppu; swing seatakse iga lingi n/y järgi
 // @match        https://www.musicca.com/drum-machine*
 // @grant        unsafeWindow
