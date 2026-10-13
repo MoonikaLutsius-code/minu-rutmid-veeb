@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Minu rütmid
 // @namespace    moonika.musicca
-// @version      4.0
+// @version      4.1
 // @description  27 rütminuppu ja helehall peatamisekraan
 // @match        https://www.musicca.com/drum-machine*
 // @grant        unsafeWindow
@@ -41,7 +41,7 @@
     ['160-3/4', '160-n-34-a--5ei6a-', 'waltz']
   ];
 
-  function setup() {
+  function setup() { if (document.getElementById('minu-rutmid-tm')) return;
     let active = false, generation = 0, wakeLock = null, starting = false;
     const host = document.createElement('div');
     host.id = 'minu-rutmid-tm';
@@ -74,7 +74,7 @@
     async function keepAwake(){if(!active||document.hidden||wakeLock||!navigator.wakeLock)return;const token=generation;try{const lock=await navigator.wakeLock.request('screen');if(!active||document.hidden||token!==generation){await lock.release();return;}wakeLock=lock;root.querySelector('#wake').textContent='Hoian ekraani ärkvel';lock.addEventListener('release',()=>{if(wakeLock===lock)wakeLock=null;});}catch(_){root.querySelector('#wake').textContent='';}}
     function stop(){generation++;active=false;starting=false;const button=control();if(button?.classList.contains('btn-pause'))button.click();stopButton.hidden=true;releaseWakeLock();}
     function start(track){
-      if(!ready()||starting)return;stop();const token=generation;starting=true;let resume;
+      if(!ready()||starting)return;active=false;const token=++generation;releaseWakeLock();starting=true;let resume;
       try{resume=page.AUDIO.resume();}catch(_){starting=false;status.textContent='Heli ei avanenud. Puuduta sama rütminuppu uuesti.';return;}
       try{
         history.replaceState(null,'','#data='+track[1]);const parsed=page.parseURLState();if(!parsed?.state)throw new Error('Vigane rütmilink');
