@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Minu rütmid
 // @namespace    moonika.musicca
-// @version      4.3
+// @version      4.4
 // @description  27 rütminuppu ja helehall peatamisekraan
 // @match        https://www.musicca.com/drum-machine*
 // @grant        unsafeWindow
@@ -114,15 +114,9 @@
   const control = () => document.querySelector('#play');
   const ready = () => page.appHasLoaded && page.AUDIO && page.App && control();
 
-  // replaceState muudab URL-i, aga ei saada hashchange sündmust; saada sündmus ise
-  // ja rakenda valitud muster otse, et URL ning Musicca olek oleksid kooskõlas.
+  // N/Y määratakse alles siis, kui kasutaja valib pärast pausi järgmise rütmi.
   function applyURLState(hash) {
-    const oldURL = page.location.href;
     history.replaceState(null, '', hash);
-    const newURL = page.location.href;
-    if (oldURL !== newURL) {
-      page.dispatchEvent(new page.HashChangeEvent('hashchange', { oldURL, newURL }));
-    }
     const parsed = page.parseURLState();
     if (!parsed?.state) throw new Error('Vigane rütmilink');
     page.App.applyPattern(parsed.state);
@@ -155,18 +149,11 @@
   }
 
   function stop() {
-    const wasActive = active;
     generation++;
     active = false;
     starting = false;
     const button = control();
     if (button?.classList.contains('btn-pause')) button.click();
-    if (wasActive) {
-      const match = location.hash.match(/^#data=(\d+)-([ny])(-.*)$/);
-      if (match && match[2] === 'y') {
-        applyURLState('#data=' + match[1] + '-n' + match[3]);
-      }
-    }
     stopButton.hidden = true;
     releaseWakeLock();
   }
