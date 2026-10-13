@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Minu rütmid
 // @namespace    moonika.musicca
-// @version      4.7
-// @description  27 rütminuppu, üks püsiv nuppude vaade ja helehall peatamisekraan
+// @version      4.8
+// @description  27 püsivat rütminuppu; swing seatakse iga lingi n/y järgi
 // @match        https://www.musicca.com/drum-machine*
 // @grant        unsafeWindow
 // @run-at       document-start
@@ -114,33 +114,22 @@
   const control = () => document.querySelector('#play');
   const ready = () => page.appHasLoaded && page.AUDIO && page.App && control();
 
-  // N/Y määratakse nupust valitud lingi järgi alles pärast helimootori avanemist.
+  // Muster ja Swing seatakse otse valitud lingi järgi. Musicca ei tohi jääda
+  // lootma eelmise mustri Swing-lüliti olekule.
   async function applyURLState(hash) {
-    if (page.location.hash !== hash) {
-      await new Promise((resolve, reject) => {
-        let finished = false;
-        let fallback;
-        const finish = () => {
-          if (finished || page.location.hash !== hash) return;
-          finished = true;
-          clearTimeout(fallback);
-          page.removeEventListener('hashchange', onHashChange);
-          resolve();
-        };
-        const onHashChange = () => finish();
-        page.addEventListener('hashchange', onHashChange);
-        try {
-          page.location.replace(hash);
-          fallback = setTimeout(finish, 150);
-        } catch (error) {
-          page.removeEventListener('hashchange', onHashChange);
-          reject(error);
-        }
-      });
-    }
+    page.history.replaceState(null, '', hash);
     const parsed = page.parseURLState();
     if (!parsed?.state) throw new Error('Vigane rütmilink');
     page.App.applyPattern(parsed.state);
+
+    const shouldSwing = /^#data=\d+-y-/.test(hash);
+    const swingToggle = page.document.querySelector('.swing-toggle');
+    if (swingToggle && swingToggle.classList.contains('active') !== shouldSwing) {
+      swingToggle.click();
+    }
+
+    // Swing-lüliti võib URL-i uuesti kirjutada; lõpuks jäta alles nupu täpne link.
+    page.history.replaceState(null, '', hash);
     await new Promise(resolve => setTimeout(resolve, 50));
   }
 
