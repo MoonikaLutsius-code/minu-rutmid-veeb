@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Minu rütmid
 // @namespace    moonika.musicca
-// @version      4.5
+// @version      4.6
 // @description  27 rütminuppu ja helehall peatamisekraan
 // @match        https://www.musicca.com/drum-machine*
 // @grant        unsafeWindow
@@ -114,13 +114,34 @@
   const control = () => document.querySelector('#play');
   const ready = () => page.appHasLoaded && page.AUDIO && page.App && control();
 
-  // N/Y määratakse alles siis, kui kasutaja valib pärast pausi järgmise rütmi.
-  function applyURLState(hash) {
-    // Kasuta päris fragmendi navigeerimist, et Musicca saaks ka oma hashchange'i.
-    page.location.replace(hash);
+  // N/Y määratakse nupust valitud lingi järgi alles pärast helimootori avanemist.
+  async function applyURLState(hash) {
+    if (page.location.hash !== hash) {
+      await new Promise((resolve, reject) => {
+        let finished = false;
+        let fallback;
+        const finish = () => {
+          if (finished || page.location.hash !== hash) return;
+          finished = true;
+          clearTimeout(fallback);
+          page.removeEventListener('hashchange', onHashChange);
+          resolve();
+        };
+        const onHashChange = () => finish();
+        page.addEventListener('hashchange', onHashChange);
+        try {
+          page.location.replace(hash);
+          fallback = setTimeout(finish, 150);
+        } catch (error) {
+          page.removeEventListener('hashchange', onHashChange);
+          reject(error);
+        }
+      });
+    }
     const parsed = page.parseURLState();
     if (!parsed?.state) throw new Error('Vigane rütmilink');
     page.App.applyPattern(parsed.state);
+    await new Promise(resolve => setTimeout(resolve, 50));
   }
 
   function releaseWakeLock() {
@@ -178,38 +199,33 @@
       return;
     }
 
-    try {
-      applyURLState('#data=' + track[1]);
-      active = true;
-      root.querySelector('#title').textContent = track[0] + ' · puuduta peatamiseks';
-      root.querySelector('#wake').textContent = 'Käivitan heli…';
-      stopButton.hidden = false;
-      keepAwake();
+    active = true;
+    root.querySelector('#title').textContent = track[0] + ' · puuduta peatamiseks';
+    root.querySelector('#wake').textContent = 'Käivitan heli…';
+    stopButton.hidden = false;
+    keepAwake();
 
-      Promise.resolve(resume).then(async () => {
-        if (token !== generation || !active || document.hidden) return;
-        if (page.AUDIO.state !== 'running') throw new Error('Heli on blokeeritud');
-        // Kontrolli värsket Play elementi ning ära vajuta seda, kui muster juba mängib.
-        const play = control();
-        if (!play) throw new Error('Play-nuppu ei leitud');
-        if (play.classList.contains('btn-play')) play.click();
-        await new Promise(resolve => setTimeout(resolve, 250));
-        if (token !== generation || !active) return;
-        const after = control();
-        if (!after || !after.classList.contains('btn-pause')) throw new Error('Musicca ei kinnitanud käivitust');
-        starting = false;
-        status.textContent = 'Rütm mängib. Puuduta halli ekraani või vajuta Enter, et peatada.';
-        root.querySelector('#wake').textContent = ' '; 
-      }).catch(() => {
-        if (token !== generation) return;
-        stop();
-        status.textContent = 'Heli ei käivitunud. Puuduta rütminuppu uuesti.';
-      });
-    } catch (_) {
-      Promise.resolve(resume).catch(() => {});
+    Promise.resolve(resume).then(async () => {
+      if (token !== generation || !active || document.hidden) return;
+      if (page.AUDIO.state !== 'running') throw new Error('Heli on blokeeritud');
+      await applyURLState('#data=' + track[1]);
+      if (token !== generation || !active || document.hidden) return;
+      // Kontrolli värsket Play elementi ning ära vajuta seda, kui muster juba mängib.
+      const play = control();
+      if (!play) throw new Error('Play-nuppu ei leitud');
+      if (play.classList.contains('btn-play')) play.click();
+      await new Promise(resolve => setTimeout(resolve, 250));
+      if (token !== generation || !active) return;
+      const after = control();
+      if (!after || !after.classList.contains('btn-pause')) throw new Error('Musicca ei kinnitanud käivitust');
+      starting = false;
+      status.textContent = 'Rütm mängib. Puuduta halli ekraani või vajuta Enter, et peatada.';
+      root.querySelector('#wake').textContent = ' ';
+    }).catch(() => {
+      if (token !== generation) return;
       stop();
-      status.textContent = 'Rütmi laadimine ebaõnnestus. Värskenda Musicca lehte.';
-    }
+      status.textContent = 'Heli ei käivitunud. Puuduta rütminuppu uuesti.';
+    });
   }
 
   const buttons = tracks.map(track => {
@@ -222,7 +238,11 @@
     return button;
   });
 
-  stopButton.addEventListener('click', stop);
+  stopButton.addEventListener('click', () => {
+    // Peata esmalt heli, siis laadi Musicca puhtalt uuesti. N/Y jääb rütminupu lingi otsustada.
+    stop();
+    setTimeout(() => page.location.reload(), 120);
+  });
   root.querySelector('#original').addEventListener('click', () => {
     stop();
     host.remove();
