@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Minu rütmid
 // @namespace    moonika.musicca
-// @version      4.6
-// @description  27 rütminuppu ja helehall peatamisekraan
+// @version      4.7
+// @description  27 rütminuppu, üks püsiv nuppude vaade ja helehall peatamisekraan
 // @match        https://www.musicca.com/drum-machine*
 // @grant        unsafeWindow
 // @run-at       document-start
@@ -238,11 +238,8 @@
     return button;
   });
 
-  stopButton.addEventListener('click', () => {
-    // Peata esmalt heli, siis laadi Musicca puhtalt uuesti. N/Y jääb rütminupu lingi otsustada.
-    stop();
-    setTimeout(() => page.location.reload(), 120);
-  });
+  // Peata heli ja näita sama juba loodud nuppude vaadet. Lehte ega nuppe ei ehitata uuesti.
+  stopButton.addEventListener('click', stop);
   root.querySelector('#original').addEventListener('click', () => {
     stop();
     host.remove();
