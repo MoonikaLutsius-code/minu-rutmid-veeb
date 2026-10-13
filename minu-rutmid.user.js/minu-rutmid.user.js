@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Minu rütmid
 // @namespace    moonika.musicca
-// @version      4.4
+// @version      4.5
 // @description  27 rütminuppu ja helehall peatamisekraan
 // @match        https://www.musicca.com/drum-machine*
 // @grant        unsafeWindow
@@ -116,7 +116,8 @@
 
   // N/Y määratakse alles siis, kui kasutaja valib pärast pausi järgmise rütmi.
   function applyURLState(hash) {
-    history.replaceState(null, '', hash);
+    // Kasuta päris fragmendi navigeerimist, et Musicca saaks ka oma hashchange'i.
+    page.location.replace(hash);
     const parsed = page.parseURLState();
     if (!parsed?.state) throw new Error('Vigane rütmilink');
     page.App.applyPattern(parsed.state);
