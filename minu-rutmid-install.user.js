@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Minu rütmid
 // @namespace    moonika.musicca
-// @version      4.9
+// @version      4.10
 // @description  27 püsivat rütminuppu; swing olek kontrollitakse enne ja pärast käivitust
 // @match        https://www.musicca.com/drum-machine*
 // @updateURL    https://raw.githubusercontent.com/MoonikaLutsius-code/minu-rutmid-veeb/main/minu-rutmid-install.user.js
@@ -69,9 +69,9 @@
       }
       section { max-width: 520px; margin: auto; }
       h1 { font-size: 30px; margin: 0 0 18px; }
-        #tracks { display: grid; width: 100%; margin-inline: auto; grid-template-columns: repeat(2, 2.7cm); justify-content: start; gap: 8px; }
+        #tracks { display: grid; width: 100%; margin-inline: auto; grid-template-columns: repeat(2, minmax(0, 3.3cm)); justify-content: start; gap: 8px; }
       button { font: 600 16px system-ui, sans-serif; touch-action: manipulation; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-      .track { min-width: 0; min-height: 56px; width: 100%; padding: 9px 10px; text-align: left; border: 1px solid; border-radius: 11px; overflow-wrap: anywhere; }
+      .track { min-width: 0; min-height: 56px; width: 100%; padding: 9px 6px; text-align: center; border: 1px solid; border-radius: 11px; overflow-wrap: anywhere; }
       .track:disabled { opacity: .45; }
       .track:active { filter: brightness(.85); }
       button:focus-visible { outline: 3px solid #bafa69; outline-offset: -3px; }
@@ -97,7 +97,7 @@
       #stop small { display: block; max-width: 30rem; font-size: 16px; font-weight: 450; margin-top: 16px; color: #333; }
       #stop[hidden] { display: none !important; }
       #original { background: none; border: 0; color: #c5ccd6; font-size: 14px; padding: 12px 0; }
-        @media (max-width: 360px) { main { padding: 18px 10px; } #tracks { width: 100%; grid-template-columns: repeat(2, 2.7cm); justify-content: start; gap: 6px; } .track { padding: 8px 6px; font-size: 14px; } }
+        @media (max-width: 360px) { main { padding: 18px 10px; } #tracks { width: 100%; grid-template-columns: repeat(2, minmax(0, 3.3cm)); justify-content: start; gap: 6px; } .track { padding: 8px 6px; font-size: 14px; } }
     </style>
     <main><section>
       <h1>Minu rütmid</h1>
@@ -152,7 +152,7 @@
     const actualSwing = await enforceSwing(shouldSwing);
 
     page.history.replaceState(null, '', hash);
-    console.info(`[Minu rütmid 4.9] rütm ${hash}; swing=${actualSwing ? 'y' : 'n'}`);
+    console.info(`[Minu rütmid 4.10] rütm ${hash}; swing=${actualSwing ? 'y' : 'n'}`);
   }
 
   function releaseWakeLock() {
@@ -239,7 +239,7 @@
       root.querySelector('#wake').textContent = ' ';
     }).catch(error => {
       if (token !== generation) return;
-      console.error('[Minu rütmid 4.9] rütmi/swingi käivitamine ebaõnnestus:', error);
+      console.error('[Minu rütmid 4.10] rütmi/swingi käivitamine ebaõnnestus:', error);
       stop();
       status.textContent = 'Heli ei käivitunud. Puuduta rütminuppu uuesti.';
     });
@@ -248,7 +248,7 @@
   const buttons = tracks.map(track => {
     const button = document.createElement('button');
     button.className = 'track ' + track[2];
-    button.textContent = track[0] + '  ▶';
+    button.textContent = track[0] + '  \u25B6';
     button.disabled = true;
     button.addEventListener('click', () => start(track));
     root.querySelector('#tracks').appendChild(button);
